@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html ng-app="realEstateApp">
+<head>
+    <meta charset="UTF-8">
+    <title>Real Estate Listing</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+</head>
+<body ng-controller="PropertyController">
+    <h2>Real Estate Listing Application (Connected to MongoDB API)</h2>
+
+    <h3>Add Property</h3>
+    <form ng-submit="addProperty()">
+        Title: <input type="text" ng-model="newProperty.title" required><br><br>
+        Location: <input type="text" ng-model="newProperty.location" required><br><br>
+        Price: <input type="number" ng-model="newProperty.price" min="0" required><br><br>
+        Type:
+        <select ng-model="newProperty.type" required>
+            <option value="">Select type</option>
+            <option>Apartment</option>
+            <option>House</option>
+            <option>Commercial</option>
+            <option>Land</option>
+        </select><br><br>
+        <button type="submit">Add Property</button>
+        <button type="button" ng-click="resetForm()">Reset</button>
+    </form>
+
+    <hr>
+    <h3>Filter Properties</h3>
+    Type:
+    <select ng-model="filterType">
+        <option value="">All</option>
+        <option>Apartment</option>
+        <option>House</option>
+        <option>Commercial</option>
+        <option>Land</option>
+    </select>
+    Minimum price: <input type="number" ng-model="minPrice">
+    Maximum price: <input type="number" ng-model="maxPrice">
+    <button ng-click="clearFilters()">Clear Filters</button>
+
+    <br><br>
+    Sort by price:
+    <select ng-model="sortOrder">
+        <option value="price">Low to High</option>
+        <option value="-price">High to Low</option>
+    </select>
+
+    <hr>
+    <h3>Property List</h3>
+    <p>{{message}}</p>
+    <table border="1">
+        <tr>
+            <th>Title</th><th>Location</th><th>Price</th><th>Type</th><th>Action</th>
+        </tr>
+        <tr ng-repeat="property in getFilteredProperties() | orderBy:sortOrder track by property._id">
+            <td>{{property.title}}</td>
+            <td>{{property.location}}</td>
+            <td>{{property.price}}</td>
+            <td>{{property.type}}</td>
+            <td><button ng-click="deleteProperty(property._id)">Delete</button></td>
+        </tr>
+    </table>
+
+    <script>
+        var app = angular.module("realEstateApp", []);
+
+        // SERVICE VERSION: calls the Node/Express API. MongoDB is accessed by the backend,
+        // not directly by browser JavaScript.
+        app.service("PropertyService", function($http) {
+            var url = "http://127.0.0.1:3000/api/properties";
+
+            this.getAll = function() {
+                return $http.get(url);
+            };
+
+            this.add = function(property) {
+                return $http.post(url, property);
+            };
+
+            this.delete = function(id) {
+                return $http.delete(url + "/" + id);
+            };
+        });
+
+        app.controller("PropertyController", function($scope, PropertyService) {
+            $scope.newProperty = {};
+            $scope.properties = [];
+            $scope.filterType = "";
+            $scope.minPrice = null;
+            $scope.maxPrice = null;
+            $scope.sortOrder = "price";
+            $scope.message = "Connecting to backend...";
+
+            $scope.loadProperties = function() {
+                PropertyService.getAll().then(function(response) {
+                    $scope.properties = response.data;
+                    $scope.message = "Data loaded from MongoDB through the API.";
+                }).catch(function() {
+                    $scope.message = "Cannot connect. Check MongoDB and backend server.";
+                });
+            };
+            $scope.loadProperties();
+
+            $scope.addProperty = function() {
+                PropertyService.add($scope.newProperty).then(function() {
+                    $scope.newProperty = {};
+                    $scope.message = "Property saved.";
+                    $scope.loadProperties();
+                }).catch(function() {
+                    $scope.message = "Could not save. Check backend/MongoDB.";
+                });
+            };
+
+            $scope.deleteProperty = function(id) {
+                PropertyService.delete(id).then(function() {
+                    $scope.message = "Property deleted.";
+                    $scope.loadProperties();
+                }).catch(function() {
+                    $scope.message = "Could not delete. Check backend/MongoDB.";
+                });
+            };
+
+            $scope.resetForm = function() {
+                $scope.newProperty = {};
+            };
+
+            $scope.clearFilters = function() {
+                $scope.filterType = "";
+                $scope.minPrice = null;
+                $scope.maxPrice = null;
+            };
+
+            $scope.getFilteredProperties = function() {
+                return ($scope.properties || []).filter(function(p) {
+                    if ($scope.filterType && p.type !== $scope.filterType) return false;
+                    if ($scope.minPrice !== null && $scope.minPrice !== "" && Number(p.price) < Number($scope.minPrice)) return false;
+                    if ($scope.maxPrice !== null && $scope.maxPrice !== "" && Number(p.price) > Number($scope.maxPrice)) return false;
+                    return true;
+                });
+            };
+        });
+    </script>
+</body>
+</html>

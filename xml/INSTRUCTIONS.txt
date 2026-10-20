@@ -1,0 +1,169 @@
+XML + DTD + XSLT MODEL LAB KIT
+==============================
+
+FILES
+-----
+properties.xml  - XML data, three property records
+properties.dtd  - structure rules, occurrence indicators, optional enum attribute
+properties.xsl  - transforms XML into an HTML table
+INSTRUCTIONS.txt - how to run and convert the scenario
+
+1. WHICH FILES TO USE FOR EACH QUESTION
+---------------------------------------
+A) If asked ONLY for XML:
+   Use properties.xml as a starting point. Change the root/record/fields/data
+   to match the question. DTD and XSLT are not required.
+
+B) If asked for XML + DTD:
+   Use properties.xml and properties.dtd.
+   Keep this XML line:
+       <!DOCTYPE properties SYSTEM "properties.dtd">
+   DTD filename must match exactly. XSLT is not needed unless requested.
+
+C) If asked for XML + XSLT:
+   Use properties.xml and properties.xsl.
+   Keep this XML line:
+       <?xml-stylesheet type="text/xsl" href="properties.xsl"?>
+   XSLT filename must match exactly. DTD is not needed unless requested.
+
+D) If asked for XML + DTD + XSLT:
+   Use all three files. Keep both the DOCTYPE and xml-stylesheet lines in XML.
+
+2. XML FILE EXPLANATION
+-----------------------
+- XML declaration identifies XML version and encoding.
+- xml-stylesheet links the XSLT file.
+- DOCTYPE links the external DTD.
+- <properties> is the root.
+- Each <property> is one record.
+- Child fields hold the record values.
+- status is an attribute; one record omits it to show that it is optional.
+
+When XML is used without XSLT or DTD, you can remove the relevant linking line.
+For an XML + DTD question, retain DOCTYPE. For XML + XSLT, retain stylesheet PI.
+
+3. DTD EXPLANATION
+------------------
+<!ELEMENT properties (property+)>
+  + means one or more property records; at least one is required.
+
+<!ELEMENT property (title, location, price, type, description?, note*)>
+  title, location, price, type are required and must appear in this order.
+  ? means zero or one description.
+  * means zero or more note elements.
+
+<!ATTLIST property status (available | sold | rented) #IMPLIED>
+  status is optional because of #IMPLIED.
+  Its only allowed values are available, sold, rented.
+
+<!ELEMENT title (#PCDATA)>
+  #PCDATA means text content. Each element field needs a declaration.
+
+DTD sequence order matters. XML fields must be in the order declared in the DTD.
+
+4. VALIDATE XML AGAINST DTD
+---------------------------
+Python option:
+  pip install lxml
+
+Save the files in the same folder, then run:
+  python -c "from lxml import etree; etree.parse('properties.xml', etree.XMLParser(dtd_validation=True)); print('XML is valid according to DTD')"
+
+If invalid, check:
+- file names and same folder
+- missing fields
+- element order
+- invalid status value
+- spelling/case of element names
+
+5. XSLT EXPLANATION
+-------------------
+<xsl:template match="/"> starts at the document root.
+<xsl:for-each select="properties/property"> loops through each record.
+<xsl:value-of select="title"/> prints the title.
+<xsl:value-of select="@status"/> reads an attribute.
+<xsl:choose>, <xsl:when>, <xsl:otherwise> handle an optional status.
+The output is HTML with a table.
+
+To view the transformation, open properties.xml in a browser that supports
+local XSLT. Some browsers restrict local file XSLT. If it does not display,
+use an XML/XSLT tool or an XSLT processor such as Saxon. DTD validation and
+XSLT transformation are separate tasks.
+
+6. CONVERT TO ANOTHER SCENARIO — THE IMPORTANT PART
+---------------------------------------------------
+Change names consistently in XML, DTD, and XSLT.
+
+REAL ESTATE -> LIBRARY EXAMPLE
+  root:        properties -> books
+  record:      property -> book
+  title        -> bookTitle
+  location     -> author
+  price        -> year
+  type         -> category
+  description  -> summary
+  note         -> note (can keep this field)
+
+Library XML example record:
+  <book status="available">
+      <bookTitle>Clean Code</bookTitle>
+      <author>Robert Martin</author>
+      <year>2008</year>
+      <category>Technology</category>
+      <summary>Programming book</summary>
+  </book>
+
+For a Library question, change the XML DOCTYPE to:
+  <!DOCTYPE books SYSTEM "books.dtd">
+Rename the DTD to books.dtd.
+Change the stylesheet href to books.xsl if you rename the XSLT file.
+Change DTD root declaration:
+  <!ELEMENT books (book+)>
+Change DTD record declaration to the fields and order used in XML, e.g.:
+  <!ELEMENT book (bookTitle, author, year, category, summary?, note*)>
+Change attribute declaration to the status values required by the question.
+In XSLT, update the loop to:
+  <xsl:for-each select="books/book">
+Change each value-of to the new field names.
+
+OTHER COMMON FIELD MAPS
+  Student: root students; record student; name, registerNo, department, email
+  Hospital: root patients; record patient; name, age, disease, ward
+  Products: root products; record product; productName, brand, price, category
+  Employees: root employees; record employee; name, employeeId, department, salary
+  Music: root songs; record song; songTitle, artist, genre, duration
+
+For every scenario:
+- Update the XML root and record element names.
+- Update every child element in the XML.
+- Update the DTD declarations and sequence in exactly the same order.
+- Update the XSLT loop path and value-of paths.
+- Update DOCTYPE filename and XSLT href if you rename files.
+- Update status enumeration to values requested in the question.
+- Keep at least three records if asked for at least three.
+- Avoid adding XML child elements not declared in DTD when validating.
+
+7. COMMON ERRORS
+----------------
+- "No declaration for element": DTD is missing an <!ELEMENT> declaration.
+- "Element ... content does not follow the DTD": XML field order differs from DTD.
+- "Attribute status is not declared": missing ATTLIST declaration.
+- "Value ... for attribute status is not among the enumerated set": status value not allowed.
+- XSLT table empty: incorrect xsl:for-each path, e.g. use properties/property for this XML.
+- XSLT shows blanks: value-of element name doesn't match XML field name.
+- File not found: XML link must match exact DTD/XSLT filename.
+
+EXAM MEMORY TRICK
+-----------------
+XML = data
+DTD = rules
+XSLT = display/transform
+
++ = one or more
+* = zero or more
+? = zero or one
+#PCDATA = text
+#IMPLIED = optional attribute
+@status = attribute in XSLT
+xsl:for-each = loop
+xsl:value-of = display a value

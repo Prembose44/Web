@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html ng-app="realEstateApp">
+<head>
+    <meta charset="UTF-8">
+    <title>Real Estate Listing</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+</head>
+<body ng-controller="PropertyController">
+    <h2>Real Estate Listing Application (Without MongoDB)</h2>
+
+    <h3>Add Property</h3>
+    <form ng-submit="addProperty()">
+        Title: <input type="text" ng-model="newProperty.title" required><br><br>
+        Location: <input type="text" ng-model="newProperty.location" required><br><br>
+        Price: <input type="number" ng-model="newProperty.price" min="0" required><br><br>
+        Type:
+        <select ng-model="newProperty.type" required>
+            <option value="">Select type</option>
+            <option>Apartment</option>
+            <option>House</option>
+            <option>Commercial</option>
+            <option>Land</option>
+        </select><br><br>
+        <button type="submit">Add Property</button>
+        <button type="button" ng-click="resetForm()">Reset</button>
+    </form>
+
+    <hr>
+    <h3>Filter Properties</h3>
+    Type:
+    <select ng-model="filterType">
+        <option value="">All</option>
+        <option>Apartment</option>
+        <option>House</option>
+        <option>Commercial</option>
+        <option>Land</option>
+    </select>
+    Minimum price: <input type="number" ng-model="minPrice">
+    Maximum price: <input type="number" ng-model="maxPrice">
+    <button ng-click="clearFilters()">Clear Filters</button>
+
+    <br><br>
+    Sort by price:
+    <select ng-model="sortOrder">
+        <option value="price">Low to High</option>
+        <option value="-price">High to Low</option>
+    </select>
+
+    <hr>
+    <h3>Property List</h3>
+    <p>{{message}}</p>
+    <table border="1">
+        <tr>
+            <th>Title</th><th>Location</th><th>Price</th><th>Type</th><th>Action</th>
+        </tr>
+        <tr ng-repeat="property in getFilteredProperties() | orderBy:sortOrder track by property.id">
+            <td>{{property.title}}</td>
+            <td>{{property.location}}</td>
+            <td>{{property.price}}</td>
+            <td>{{property.type}}</td>
+            <td><button ng-click="deleteProperty(property.id)">Delete</button></td>
+        </tr>
+    </table>
+
+    <script>
+        var app = angular.module("realEstateApp", []);
+
+        // SERVICE VERSION: stores data in a JavaScript array, not MongoDB.
+        app.service("PropertyService", function() {
+            var properties = [
+                { id: 1, title: "2BHK Apartment", location: "Madurai", price: 2500000, type: "Apartment" },
+                { id: 2, title: "Independent House", location: "Chennai", price: 4500000, type: "House" },
+                { id: 3, title: "Commercial Shop", location: "Coimbatore", price: 1800000, type: "Commercial" }
+            ];
+            var nextId = 4;
+
+            this.getAll = function() {
+                return properties;
+            };
+
+            this.add = function(property) {
+                property.id = nextId++;
+                properties.push(angular.copy(property));
+            };
+
+            this.delete = function(id) {
+                for (var i = 0; i < properties.length; i++) {
+                    if (properties[i].id === id) {
+                        properties.splice(i, 1);
+                        break;
+                    }
+                }
+            };
+        });
+
+        app.controller("PropertyController", function($scope, PropertyService) {
+            $scope.newProperty = {};
+            $scope.filterType = "";
+            $scope.minPrice = null;
+            $scope.maxPrice = null;
+            $scope.sortOrder = "price";
+            $scope.message = "Demo mode: data is stored in memory and resets when you refresh.";
+
+            $scope.loadProperties = function() {
+                $scope.properties = PropertyService.getAll();
+            };
+            $scope.loadProperties();
+
+            $scope.addProperty = function() {
+                PropertyService.add($scope.newProperty);
+                $scope.newProperty = {};
+                $scope.loadProperties();
+                $scope.message = "Property added (demo memory only).";
+            };
+
+            $scope.deleteProperty = function(id) {
+                PropertyService.delete(id);
+                $scope.loadProperties();
+                $scope.message = "Property deleted.";
+            };
+
+            $scope.resetForm = function() {
+                $scope.newProperty = {};
+            };
+
+            $scope.clearFilters = function() {
+                $scope.filterType = "";
+                $scope.minPrice = null;
+                $scope.maxPrice = null;
+            };
+
+            $scope.getFilteredProperties = function() {
+                return ($scope.properties || []).filter(function(p) {
+                    if ($scope.filterType && p.type !== $scope.filterType) return false;
+                    if ($scope.minPrice !== null && $scope.minPrice !== "" && Number(p.price) < Number($scope.minPrice)) return false;
+                    if ($scope.maxPrice !== null && $scope.maxPrice !== "" && Number(p.price) > Number($scope.maxPrice)) return false;
+                    return true;
+                });
+            };
+        });
+    </script>
+</body>
+</html>
