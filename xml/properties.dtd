@@ -1,0 +1,14 @@
+<!ELEMENT properties (property+)>
+
+<!ELEMENT property (title, location, price, type, description?, note*)>
+
+<!ATTLIST property
+    status (available | sold | rented) #IMPLIED
+>
+
+<!ELEMENT title (#PCDATA)>
+<!ELEMENT location (#PCDATA)>
+<!ELEMENT price (#PCDATA)>
+<!ELEMENT type (#PCDATA)>
+<!ELEMENT description (#PCDATA)>
+<!ELEMENT note (#PCDATA)>

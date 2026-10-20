@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="properties.xsl"?>
+<!DOCTYPE properties SYSTEM "properties.dtd">
+
+<properties>
+    <property status="available">
+        <title>2BHK Apartment</title>
+        <location>Madurai</location>
+        <price>2500000</price>
+        <type>Apartment</type>
+        <description>Near college</description>
+        <note>Parking available</note>
+        <note>Water supply available</note>
+    </property>
+
+    <property status="sold">
+        <title>Independent House</title>
+        <location>Chennai</location>
+        <price>4500000</price>
+        <type>House</type>
+        <description>Recently renovated</description>
+    </property>
+
+    <property>
+        <title>Commercial Shop</title>
+        <location>Coimbatore</location>
+        <price>1800000</price>
+        <type>Commercial</type>
+    </property>
+</properties>
