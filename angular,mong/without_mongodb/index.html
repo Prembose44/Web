@@ -6,7 +6,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
 </head>
 <body ng-controller="PropertyController">
-    <h2>Real Estate Listing Application (Without MongoDB)</h2>
+    <h2>Real Estate Listing Application </h2>
 
     <h3>Add Property</h3>
     <form ng-submit="addProperty()">
@@ -99,7 +99,7 @@
             $scope.minPrice = null;
             $scope.maxPrice = null;
             $scope.sortOrder = "price";
-            $scope.message = "Demo mode: data is stored in memory and resets when you refresh.";
+            
 
             $scope.loadProperties = function() {
                 $scope.properties = PropertyService.getAll();
@@ -110,7 +110,7 @@
                 PropertyService.add($scope.newProperty);
                 $scope.newProperty = {};
                 $scope.loadProperties();
-                $scope.message = "Property added (demo memory only).";
+                $scope.message = "Property added.";
             };
 
             $scope.deleteProperty = function(id) {

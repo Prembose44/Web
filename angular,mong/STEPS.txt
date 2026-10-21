@@ -1,0 +1,439 @@
+REAL ESTATE MODEL LAB — SIMPLE FRONTEND + MONGODB
+DETAILED INSTRUCTIONS AND HOW TO ADAPT TO OTHER QUESTIONS
+=========================================================
+
+This project uses:
+- One simple HTML file for the frontend
+- AngularJS service and controller written inside that HTML file
+- Node.js + Express for the API
+- Mongoose to define the database schema
+- MongoDB Community Server to store records
+
+FILES
+-----
+public/index.html      Frontend form, filter controls, list, AngularJS service/controller
+backend/server.js      Node/Express API, Mongoose schema, database connection
+backend/package.json   Backend dependencies and start command
+backend/.env           MongoDB connection URI and backend port
+STEPS.txt              This instruction file
+
+=========================================================
+PART 1 — RUN THE EXISTING PROJECT
+=========================================================
+
+1. CHECK MONGODB SERVER
+-----------------------
+Press Win + R, type:
+  services.msc
+
+Find a service named MongoDB. If it exists but is stopped, right-click it and
+choose Start.
+
+In MongoDB Compass, connect to:
+  mongodb://127.0.0.1:27017
+
+Important: Compass is only the graphical client. Installing Compass alone does
+not install the MongoDB database server. If there is no MongoDB service, install
+MongoDB Community Server for Windows and choose the option to install it as a
+Windows Service if offered.
+
+2. FIND THE MONGODB EXECUTABLE PATH
+-----------------------------------
+A common path is:
+  C:\Program Files\MongoDB\Server\<version>\bin\mongod.exe
+
+To find the actual path:
+- Open services.msc.
+- Double-click the MongoDB service.
+- Read the "Path to executable" field.
+- You can also run `where mongod` in Command Prompt if MongoDB is on PATH.
+
+If the server is installed but not running as a service, create a data folder:
+  mkdir C:\data\db
+
+Then run mongod.exe with your actual installation path, for example:
+  "C:\Program Files\MongoDB\Server\8.0\bin\mongod.exe" --dbpath "C:\data\db"
+
+Replace 8.0 with your installed version. Keep that terminal open. Do not start
+a second MongoDB server if the Windows service is already running on port 27017.
+
+3. START THE BACKEND
+--------------------
+Install Node.js LTS if it is not installed.
+
+Open the `backend` folder in File Explorer. Click the address bar, type `cmd`,
+and press Enter. Run:
+  npm install
+  npm start
+
+Expected messages:
+  Connected to MongoDB: mongodb://127.0.0.1:27017/realestatedb
+  Backend running at http://127.0.0.1:3000
+
+Keep this terminal open.
+
+4. START THE FRONTEND
+---------------------
+Open a second terminal inside the `public` folder. Run:
+  npx http-server -p 5500
+
+If asked to install http-server, accept. Alternatively, open the folder in VS
+Code and use the Live Server extension.
+
+Open the URL shown by the server, commonly:
+  http://127.0.0.1:5500
+
+Keep both the backend and frontend terminals running.
+
+5. TEST WITH COMPASS
+--------------------
+Connect Compass to:
+  mongodb://127.0.0.1:27017
+
+Add a property in the browser. Refresh Compass. Look for:
+  Database: realestatedb
+  Collection: properties
+
+MongoDB may not show the database/collection until the first record is inserted.
+
+=========================================================
+PART 2 — SERVICE VS FACTORY: WHAT TO DELETE
+=========================================================
+
+The supplied `public/index.html` already uses ONLY a service. It does not have
+a factory, so you do not need to delete anything from this supplied version.
+
+The current service is:
+
+  app.service("PropertyService", function($http) {
+      var url = "http://127.0.0.1:3000/api/properties";
+      this.getProperties = function() { return $http.get(url); };
+      this.addProperty = function(property) { return $http.post(url, property); };
+      this.deleteProperty = function(id) { return $http.delete(url + "/" + id); };
+  });
+
+The controller uses it here:
+
+  app.controller("PropertyController", function($scope, PropertyService) {
+
+If a different lab template contains BOTH a service and a factory and the
+question says "use only service":
+
+1. Delete the entire factory declaration, usually beginning like:
+     app.factory("PropertyFactory", function(...) {
+   and ending at its matching `});`.
+   Delete only that factory block, not the service or controller.
+
+2. In the controller parameter list, remove `PropertyFactory` if it is listed.
+   Keep `PropertyService`, for example:
+     function($scope, PropertyService)
+
+3. Delete all calls that use `PropertyFactory`, such as:
+     PropertyFactory.getProperties()
+   Replace them with the matching service call:
+     PropertyService.getProperties()
+
+4. If there is a separate script reference such as:
+     <script src="js/student-factory.js"></script>
+   remove that line if the factory file is no longer used.
+   If the factory was written inline in the HTML, remove only its factory block.
+
+5. Search the whole project for `Factory` and check that no controller or other
+   code still injects or calls the removed factory.
+
+Important distinction:
+- `app.service("Name", function(...) { this.method = ...; })`
+  normally exposes methods using `this`.
+- `app.factory("Name", function(...) { return { method: ... }; })`
+  normally returns an object.
+Do not mix the two patterns. For an exam asking for a service, use the service
+pattern consistently.
+
+=========================================================
+PART 3 — UNDERSTAND THE FRONTEND
+=========================================================
+
+The HTML is intentionally plain: headings, inputs, dropdowns, buttons, <hr>,
+and an ng-repeat list. There is no separate CSS design.
+
+A. FORM FIELDS
+--------------
+These inputs bind the typed values to the AngularJS object:
+
+  ng-model="newProperty.title"
+  ng-model="newProperty.location"
+  ng-model="newProperty.price"
+  ng-model="newProperty.type"
+
+`newProperty` is the object that will be sent to the backend. The names after
+the dot become property names in that JavaScript object.
+
+B. SUBMIT
+---------
+  <form ng-submit="addProperty()">
+
+This calls the controller's `addProperty()` function when the form is submitted.
+
+The controller calls:
+  PropertyService.addProperty($scope.newProperty)
+
+The service sends an HTTP POST request to Node.js. Node.js validates and saves
+the data through Mongoose.
+
+C. RESET
+--------
+  ng-click="resetForm()"
+
+The controller function sets:
+  $scope.newProperty = {};
+
+D. LISTING
+----------
+  ng-repeat="property in getFilteredProperties() | orderBy:sortOrder"
+
+This repeats the display block once for each matching property. Display a field
+with expressions such as:
+  {{ property.title }}
+  {{ property.location }}
+  {{ property.price }}
+  {{ property.type }}
+
+E. DELETE
+---------
+The Delete button calls:
+  deleteProperty(property._id)
+
+MongoDB creates `_id` automatically. The backend route deletes that record.
+Do not use `property.title` as the ID for this API.
+
+F. FILTERING AND SORTING
+------------------------
+`filterType`, `minPrice`, and `maxPrice` are controller variables. The function
+`getFilteredProperties()` compares them with each record.
+
+`orderBy:sortOrder` sorts the returned list. In AngularJS:
+- `price` means ascending
+- `-price` means descending
+
+If a new scenario has no price field, remove the price filter and sorting controls
+and remove their related controller variables/functions.
+
+=========================================================
+PART 4 — CONVERT THE APP TO LIBRARY MANAGEMENT
+=========================================================
+
+Example Library fields:
+- bookTitle
+- author
+- category
+- year
+
+You must update the FRONTEND and BACKEND consistently. Changing only the form
+will not change what MongoDB stores.
+
+A. public/index.html — UPDATE THE FORM
+--------------------------------------
+Replace the Real Estate input fields with:
+
+  Book Title:
+  <input type="text" ng-model="newBook.bookTitle" required>
+
+  Author:
+  <input type="text" ng-model="newBook.author" required>
+
+  Category:
+  <select ng-model="newBook.category" required>
+      <option value="">Select Category</option>
+      <option>Fiction</option>
+      <option>Science</option>
+      <option>Technology</option>
+  </select>
+
+  Publication Year:
+  <input type="number" ng-model="newBook.year" min="1" required>
+
+Also change the page heading to "Library Management System".
+
+B. UPDATE THE LISTING
+---------------------
+Use these expressions in the ng-repeat display:
+  {{ book.bookTitle }}
+  {{ book.author }}
+  {{ book.category }}
+  {{ book.year }}
+
+Rename the repeated variable from `property` to `book` consistently, for example:
+  ng-repeat="book in books track by book._id"
+
+Update the controller variable names if desired. Make sure the list-loading
+function assigns API results to `$scope.books`.
+
+C. UPDATE SERVICE NAMES AND URL
+-------------------------------
+Rename `PropertyService` to `BookService` in BOTH the service declaration and
+the controller injection.
+
+Change the URL to:
+  http://127.0.0.1:3000/api/books
+
+Use methods that call:
+  GET    /api/books
+  POST   /api/books
+  DELETE /api/books/:id
+
+Keep the HTTP methods the same; update the URL and object names.
+
+D. backend/server.js — UPDATE THE SCHEMA
+----------------------------------------
+Replace the property schema with:
+
+  const bookSchema = new mongoose.Schema({
+      bookTitle: { type: String, required: true, trim: true },
+      author: { type: String, required: true, trim: true },
+      category: {
+          type: String,
+          required: true,
+          enum: ["Fiction", "Science", "Technology"]
+      },
+      year: { type: Number, required: true, min: 1 }
+  });
+
+  const Book = mongoose.model("Book", bookSchema);
+
+E. UPDATE THE BACKEND ROUTES
+----------------------------
+Use `/api/books` instead of `/api/properties` in the GET, POST, and DELETE routes.
+
+GET:
+  res.json(await Book.find());
+
+POST:
+  const book = await Book.create({
+      bookTitle: req.body.bookTitle,
+      author: req.body.author,
+      category: req.body.category,
+      year: req.body.year
+  });
+  res.status(201).json(book);
+
+DELETE:
+  const book = await Book.findByIdAndDelete(req.params.id);
+
+Make sure every route uses the `Book` model, not `Property`.
+
+F. DATABASE NAME (OPTIONAL)
+---------------------------
+In backend/.env, you may change:
+  MONGO_URI=mongodb://127.0.0.1:27017/librarydb
+
+If you change the database name, restart the backend. MongoDB creates the new
+database after the first successful insert.
+
+G. FILTERS
+----------
+For Library Management, a simple category filter is a direct replacement for
+the property type filter:
+- `filterType` can be renamed to `filterCategory`
+- compare `book.category === $scope.filterCategory`
+- remove minPrice/maxPrice if year or price-range filtering is not required
+- if asked to filter by publication year, add `minYear` and `maxYear` controls
+  and compare `book.year` against them.
+
+=========================================================
+PART 5 — QUICK FIELD CONVERSION TABLE
+=========================================================
+
+REAL ESTATE -> LIBRARY
+----------------------
+Page heading:       Real Estate Listing Application -> Library Management System
+Service:            PropertyService -> BookService
+Controller:         PropertyController -> BookController (optional rename)
+Object:             newProperty -> newBook
+Collection array:   properties -> books
+Record variable:    property -> book
+title               -> bookTitle
+location            -> author
+price               -> year (or remove price entirely)
+type                -> category
+API URL:            /api/properties -> /api/books
+Mongoose model:     Property -> Book
+Database:           realestatedb -> librarydb (optional)
+Delete ID:          property._id -> book._id
+
+STUDENT MANAGEMENT EXAMPLE
+--------------------------
+Possible fields:
+  name, registerNo, department, email
+Use:
+  StudentService, StudentController, newStudent, students/student
+API:
+  GET/POST /api/students
+  DELETE /api/students/:id
+Mongoose schema fields must be name, registerNo, department, email.
+
+MUSIC MANAGEMENT EXAMPLE
+------------------------
+Possible fields:
+  songTitle, artist, genre, duration
+Use:
+  MusicService, newSong, songs/song
+API:
+  GET/POST /api/songs
+  DELETE /api/songs/:id
+
+GENERAL RULE:
+Every field name must match across:
+1. HTML ng-model
+2. AngularJS object sent to the service
+3. Backend POST handler (req.body.fieldName)
+4. Mongoose schema
+5. Display expressions in ng-repeat
+6. Filter/sort code, if those fields are filtered/sorted
+
+=========================================================
+PART 6 — COMMON ERRORS
+=========================================================
+
+ECONNREFUSED 127.0.0.1:27017
+- MongoDB Community Server is stopped/not installed or the port is wrong.
+- Check services.msc. Compass alone is not the database server.
+
+Cannot load properties
+- Check the backend terminal and ensure `npm start` is still running.
+- Open http://127.0.0.1:3000 in the browser; it should say the API is running.
+- Check that the frontend service URL uses the same port as backend/.env.
+
+Record does not appear in Compass
+- Add a record first, then refresh Compass.
+- Check the database name in backend/.env.
+
+Cannot add a record / HTTP 400
+- Check required fields and allowed enum values.
+- Check the browser console and backend terminal for error details.
+- Ensure the frontend names match the Mongoose schema and POST handler.
+
+Delete does not work
+- Pass the MongoDB `_id`, e.g. `book._id`, to the delete function.
+- Ensure frontend DELETE URL and backend route use the same endpoint.
+
+Factory-related injection error
+- If you removed the factory, remove its name from controller injection and
+  replace calls with the service name. Do not leave a reference to a deleted
+  factory file in a script tag.
+
+Port 3000 already in use
+- Change PORT in backend/.env and update the API URL in the frontend service
+  to the same port.
+
+FINAL EXAM CHECKLIST
+--------------------
+[ ] The form uses the correct ng-model fields.
+[ ] Add calls the controller function.
+[ ] Controller calls the service.
+[ ] Service URL matches backend routes.
+[ ] Backend POST handler reads the correct req.body fields.
+[ ] Mongoose schema has matching field names.
+[ ] GET loads the right collection.
+[ ] Delete uses the MongoDB `_id`.
+[ ] Filters/sort use fields that actually exist.
+[ ] Only one chosen data-access pattern (service OR factory) is used consistently.
